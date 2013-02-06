@@ -54,16 +54,16 @@ object ProviderController extends Controller
 
   def toUrl(implicit request: RequestHeader) = session.get(SecureSocial.OriginalUrlKey).getOrElse(landingUrl)
 
-  def toUrlORVersion(implicit request: RequestHeader) = session.get(SecureSocial.OriginalUrlKey).getOrElse({
-    Logger.debug("redirect to url: SecureSocial.OriginalUrlKey not found")
-    session.get("rurl").getOrElse({
-      Logger.debug("redirect to url: rurl not found")
-      Play.configuration.getString(onLoginGoTo).getOrElse({
-        Logger.debug("redirect to url: onLoginGoTo key not found")
-        Play.configuration.getString(ApplicationContext).getOrElse(Root)
-      })
-    })
-  })
+  // def toUrlORVersion(implicit request: RequestHeader) = session.get(SecureSocial.OriginalUrlKey).getOrElse({
+  //   Logger.debug("redirect to url: SecureSocial.OriginalUrlKey not found")
+  //   session.get("rurl").getOrElse({
+  //     Logger.debug("redirect to url: rurl not found")
+  //     Play.configuration.getString(onLoginGoTo).getOrElse({
+  //       Logger.debug("redirect to url: onLoginGoTo key not found")
+  //       Play.configuration.getString(ApplicationContext).getOrElse(Root)
+  //     })
+  //   })
+  // })
 
 
   def landingUrl = Play.configuration.getString(onLoginGoTo).getOrElse(
@@ -111,8 +111,7 @@ object ProviderController extends Controller
                 (SecureSocial.UserKey -> user.id.id) +
                 SecureSocial.lastAccess +
                 (SecureSocial.ProviderKey -> user.id.providerId) -
-                SecureSocial.OriginalUrlKey -
-                "rurl"
+                SecureSocial.OriginalUrlKey
               }
           })
         } catch {

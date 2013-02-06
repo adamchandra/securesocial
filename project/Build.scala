@@ -15,10 +15,7 @@ object ApplicationBuild extends Build {
   val organization    = "net.openreview"
 
   val appDependencies = Seq(
-    // "com.typesafe" %% "play-plugins-util" % "2.0.3",
-    // "com.typesafe" %% "play-plugins-mailer" % "2.0.4",
     "org.apache.commons" % "commons-email" % "1.2",
-    // "com.typesafe" %% "play-plugins-util" % "2.0.3-08072012"
     "org.mindrot" % "jbcrypt" % "0.3m"
   )
 
