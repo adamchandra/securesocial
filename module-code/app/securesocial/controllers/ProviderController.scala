@@ -51,7 +51,20 @@ object ProviderController extends Controller
    * @param request
    * @return
    */
+
   def toUrl(implicit request: RequestHeader) = session.get(SecureSocial.OriginalUrlKey).getOrElse(landingUrl)
+
+  def toUrlORVersion(implicit request: RequestHeader) = session.get(SecureSocial.OriginalUrlKey).getOrElse({
+    Logger.debug("redirect to url: SecureSocial.OriginalUrlKey not found")
+    session.get("rurl").getOrElse({
+      Logger.debug("redirect to url: rurl not found")
+      Play.configuration.getString(onLoginGoTo).getOrElse({
+        Logger.debug("redirect to url: onLoginGoTo key not found")
+        Play.configuration.getString(ApplicationContext).getOrElse(Root)
+      })
+    })
+  })
+
 
   def landingUrl = Play.configuration.getString(onLoginGoTo).getOrElse(
     Play.configuration.getString(ApplicationContext).getOrElse(Root)
@@ -78,11 +91,18 @@ object ProviderController extends Controller
   def authenticateByPost(provider: String) = handleAuth(provider)
 
   private def handleAuth(provider: String) = Action { implicit request =>
+    Logger.debug("handleAuth:request:"+request)
+    Logger.debug("handleAuth:provider:"+provider)
     Registry.providers.get(provider) match {
       case Some(p) => {
         try {
-          p.authenticate().fold( result => result , {
+          Logger.debug("handleAuth:provider:"+provider+":matched:Some("+p+")")
+          p.authenticate().fold({ result => 
+            Logger.debug("handleAuth:provider:"+provider+":matched:result:"+result)
+            result 
+          }, { 
             user =>
+              Logger.debug("handleAuth:provider:[securesocial] user logged in : [" + user + "]")
               if ( Logger.isDebugEnabled ) {
                 Logger.debug("[securesocial] user logged in : [" + user + "]")
               }
@@ -91,11 +111,13 @@ object ProviderController extends Controller
                 (SecureSocial.UserKey -> user.id.id) +
                 SecureSocial.lastAccess +
                 (SecureSocial.ProviderKey -> user.id.providerId) -
-                SecureSocial.OriginalUrlKey
+                SecureSocial.OriginalUrlKey -
+                "rurl"
               }
           })
         } catch {
           case ex: AccessDeniedException => {
+            Logger.debug("handleAuth:AccessDeniedException:[securesocial]:"+ex.getMessage)
             Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.login.accessDenied"))
           }
 

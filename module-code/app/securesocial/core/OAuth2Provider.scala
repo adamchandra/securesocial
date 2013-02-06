@@ -33,6 +33,15 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
 
   def authMethod = AuthenticationMethod.OAuth2
 
+
+  def rewriteRedirect[A](id:String)(implicit request: Request[A]): String = {
+    val originalUrl = RoutesHelper.authenticate(id).absoluteURL(IdentityProvider.sslEnabled)
+    settings.redirectHost.map(
+      h => originalUrl.replaceFirst("//([^/])+/", "//"+h+"/")
+    ).getOrElse(originalUrl)
+  }
+
+  //TODO: missing redirectHost setting should not log as error
   private def createSettings(): OAuth2Settings = {
     val result = for {
       authorizationUrl <- loadProperty(OAuth2Settings.AuthorizationUrl) ;
@@ -41,7 +50,7 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
       clientSecret <- loadProperty(OAuth2Settings.ClientSecret)
     } yield {
       val scope = application.configuration.getString(propertyKey + OAuth2Settings.Scope)
-      OAuth2Settings(authorizationUrl, accessToken, clientId, clientSecret, scope)
+      OAuth2Settings(authorizationUrl, accessToken, clientId, clientSecret, scope, loadProperty(OAuth2Settings.RedirectHost))
     }
     if ( !result.isDefined ) {
       throwMissingPropertiesException()
@@ -55,7 +64,8 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
       OAuth2Constants.ClientSecret -> Seq(settings.clientSecret),
       OAuth2Constants.GrantType -> Seq(OAuth2Constants.AuthorizationCode),
       OAuth2Constants.Code -> Seq(code),
-      OAuth2Constants.RedirectUri -> Seq(RoutesHelper.authenticate(id).absoluteURL(IdentityProvider.sslEnabled))
+      // OAuth2Constants.RedirectUri -> Seq(RoutesHelper.authenticate(id).absoluteURL(IdentityProvider.sslEnabled))
+      OAuth2Constants.RedirectUri -> Seq(rewriteRedirect(id))
     )
     WS.url(settings.accessTokenUrl).post(params).await(10000).fold( onError =>
       {
@@ -120,9 +130,12 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
         Cache.set(sessionId, state)
         var params = List(
           (OAuth2Constants.ClientId, settings.clientId),
-          (OAuth2Constants.RedirectUri, RoutesHelper.authenticate(id).absoluteURL(IdentityProvider.sslEnabled)),
+          // (OAuth2Constants.RedirectUri, RoutesHelper.authenticate(id).absoluteURL(IdentityProvider.sslEnabled)),
+          (OAuth2Constants.RedirectUri, rewriteRedirect(id)),
           (OAuth2Constants.ResponseType, OAuth2Constants.Code),
-          (OAuth2Constants.State, state))
+          (OAuth2Constants.State, state),
+          (OAuth2Constants.ApprovalPrompt, "force")
+        )
         settings.scope.foreach( s => { params = (OAuth2Constants.Scope, s) :: params })
         val url = settings.authorizationUrl +
           params.map( p => p._1 + "=" + URLEncoder.encode(p._2, "UTF-8")).mkString("?", "&", "")
@@ -136,8 +149,8 @@ abstract class OAuth2Provider(application: Application) extends IdentityProvider
 }
 
 case class OAuth2Settings(authorizationUrl: String, accessTokenUrl: String, clientId: String,
-                          clientSecret: String, scope: Option[String]
-                           )
+                          clientSecret: String, scope: Option[String], redirectHost: Option[String]
+)
 
 object OAuth2Settings {
   val AuthorizationUrl = "authorizationUrl"
@@ -145,6 +158,7 @@ object OAuth2Settings {
   val ClientId = "clientId"
   val ClientSecret = "clientSecret"
   val Scope = "scope"
+  val RedirectHost = "redirectHost"
 }
 
 object OAuth2Constants {
@@ -163,4 +177,5 @@ object OAuth2Constants {
   val ExpiresIn = "expires_in"
   val RefreshToken = "refresh_token"
   val AccessDenied = "access_denied"
+  val ApprovalPrompt = "approval_prompt" // =force
 }

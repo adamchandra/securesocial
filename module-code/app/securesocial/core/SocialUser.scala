@@ -65,7 +65,7 @@ object SocialUser {
  * The ID of an Identity
  *
  * @param id the id on the provider the user came from (eg: twitter, facebook)
- * @param providerId the provider used to sign in
+ * @param providerId the provider they used to sign in
  */
 case class UserId(id: String, providerId: String)
 

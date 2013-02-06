@@ -14,9 +14,11 @@
  * limitations under the License.
  *
  */
-package securesocial.core.providers.utils
+package securesocial.core
+package providers
+package utils
 
-import java.security.MessageDigest
+import _root_.java.security.MessageDigest
 import play.api.libs.ws.WS
 import securesocial.core.providers.UsernamePasswordProvider
 

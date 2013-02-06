@@ -39,6 +39,7 @@ class GoogleProvider(application: Application) extends OAuth2Provider(applicatio
 
 
   override def id = GoogleProvider.Google
+  val providerId = id
 
   def fillProfile(user: SocialUser): SocialUser = {
     val accessToken = user.oAuth2Info.get.accessToken
@@ -64,7 +65,7 @@ class GoogleProvider(application: Application) extends OAuth2Provider(applicatio
           val avatarUrl = ( me \ Picture).asOpt[String]
           val email = ( me \ Email).as[String]
           user.copy(
-            id = UserId(userId, id),
+            id = UserId(id.toString, providerId),
             firstName = firstName,
             lastName = lastName,
             fullName = fullName,
