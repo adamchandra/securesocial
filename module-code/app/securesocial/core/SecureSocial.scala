@@ -99,9 +99,14 @@ trait SecureSocial extends Controller {
    * @tparam A
    * @return
    */
-  def SecuredAction[A](ajaxCall: Boolean, authorize: Option[Authorization], p: BodyParser[A])
-                      (f: SecuredRequest[A] => Result)
-                       = Action(p) {
+  def SecuredAction[A](
+    ajaxCall: Boolean, 
+    authorize: Option[Authorization], 
+    p: BodyParser[A], 
+    flashMessage:Option[(String, String)] = Some("error" -> Messages("securesocial.loginRequired"))
+  ) (
+    f: SecuredRequest[A] => Result
+  ) = Action(p) {
     implicit request => {
 
       val result = for (
@@ -133,7 +138,7 @@ trait SecureSocial extends Controller {
         if ( ajaxCall ) {
           ajaxCallNotAuthenticated(request)
         } else {
-          Redirect(RoutesHelper.login()).flashing("error" -> Messages("securesocial.loginRequired")).withSession(
+          Redirect(RoutesHelper.login()).flashing(flashMessage.getOrElse(""->"")).withSession(
             session + (SecureSocial.OriginalUrlKey -> request.uri)
               - SecureSocial.UserKey
               - SecureSocial.ProviderKey
