@@ -82,7 +82,7 @@ class FacebookProvider(application: Application) extends OAuth2Provider(applicat
           val email = ( me \ Email).as[String]
 
           user.copy(
-            id = UserId(id.toString, providerId),
+            id = UserId(userId, providerId),
             firstName = firstName,
             lastName = lastName,
             fullName = name,

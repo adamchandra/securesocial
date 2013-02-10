@@ -103,7 +103,8 @@ trait SecureSocial extends Controller {
     ajaxCall: Boolean, 
     authorize: Option[Authorization], 
     p: BodyParser[A], 
-    flashMessage:Option[(String, String)] = Some("error" -> Messages("securesocial.loginRequired"))
+    flashMessage:Option[(String, String)] = Some("error" -> Messages("securesocial.loginRequired")),
+    landingUrl: Option[String] = None
   ) (
     f: SecuredRequest[A] => Result
   ) = Action(p) {
@@ -131,15 +132,17 @@ trait SecureSocial extends Controller {
         }
       }
 
+      val finalUrl = landingUrl.getOrElse(request.uri)
+
       result.getOrElse({
         if ( Logger.isDebugEnabled ) {
-          Logger.debug("[securesocial] anonymous user trying to access : '%s'".format(request.uri))
+          Logger.debug("[securesocial] anonymous user trying to access : '%s'".format(finalUrl))
         }
         if ( ajaxCall ) {
           ajaxCallNotAuthenticated(request)
         } else {
           Redirect(RoutesHelper.login()).flashing(flashMessage.getOrElse(""->"")).withSession(
-            session + (SecureSocial.OriginalUrlKey -> request.uri)
+            session + (SecureSocial.OriginalUrlKey -> finalUrl)
               - SecureSocial.UserKey
               - SecureSocial.ProviderKey
               - SecureSocial.LastAccessKey
