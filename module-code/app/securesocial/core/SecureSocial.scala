@@ -253,10 +253,10 @@ object SecureSocial {
    */
   def userFromSession[A](implicit request: RequestHeader):Option[UserId] = {
     for (
-      userId <- request.session.get(SecureSocial.UserKey);
-      providerId <- request.session.get(SecureSocial.ProviderKey)
+      userKey <- request.session.get(SecureSocial.UserKey);
+      providerKey <- request.session.get(SecureSocial.ProviderKey)
     ) yield {
-      UserId(userId, providerId)
+      UserId.forProvider(providerKey)(userKey)
     }
   }
 
@@ -284,7 +284,7 @@ object SecureSocial {
    * @return an optional service info
    */
   def serviceInfoFor(user: Identity): Option[ServiceInfo] = {
-    Registry.providers.get(user.id.providerId) match {
+    Registry.providers.get(user.id.providerKey) match {
       case Some(p: OAuth1Provider) if p.authMethod == AuthenticationMethod.OAuth1 => Some(p.serviceInfo)
       case _ => None
     }

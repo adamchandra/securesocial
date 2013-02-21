@@ -108,9 +108,9 @@ object ProviderController extends Controller
               }
               val withSession = Events.fire(new LoginEvent(user)).getOrElse(session)
               Redirect(toUrl).withSession { withSession +
-                (SecureSocial.UserKey -> user.id.id) +
+                (SecureSocial.UserKey -> user.id.userKey) +
                 SecureSocial.lastAccess +
-                (SecureSocial.ProviderKey -> user.id.providerId) -
+                (SecureSocial.ProviderKey -> user.id.providerKey) -
                 SecureSocial.OriginalUrlKey
               }
           })

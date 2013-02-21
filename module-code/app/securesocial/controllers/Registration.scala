@@ -68,7 +68,8 @@ object Registration extends Controller {
   val formWithUsername = Form[RegistrationInfo](
     mapping(
       UserName -> nonEmptyText.verifying( Messages(UserNameAlreadyTaken), userName => {
-          UserService.find(UserId(userName,providerId)).isEmpty
+        // UserService.find(UserId(userName,providerId)).isEmpty
+        UserService.find(UserId.forProvider(providerId)(userName)).isEmpty
       }),
       FirstName -> nonEmptyText,
       LastName -> nonEmptyText,
@@ -204,7 +205,7 @@ object Registration extends Controller {
         },
         info => {
           val id = if ( UsernamePasswordProvider.withUserNameSupport ) info.userName.get else t.email
-          val userId = UserId(id, providerId)
+          val userId = UserId.forProvider(providerId)(id)
           val user = SocialUser(
             userId,
             info.firstName,
@@ -213,7 +214,7 @@ object Registration extends Controller {
             Some(t.email),
             GravatarHelper.avatarFor(t.email),
             AuthenticationMethod.UserPassword,
-            passwordInfo = Some(Registry.hashers.currentHasher.hash(info.password))
+            passwordInfos = List(Registry.hashers.currentHasher.hash(info.password))
           )
           UserService.save(user)
           UserService.deleteToken(t.uuid)
@@ -265,7 +266,7 @@ object Registration extends Controller {
         val toFlash = UserService.findByEmailAndProvider(t.email, UsernamePasswordProvider.UsernamePassword) match {
           case Some(user) => {
             val hashed = Registry.hashers.currentHasher.hash(p._1)
-            val updated = SocialUser(user).copy( passwordInfo = Some(hashed) )
+            val updated = SocialUser(user).copy(passwordInfos = List(hashed))
             UserService.save(updated)
             UserService.deleteToken(token)
             Mailer.sendPasswordChangedNotice(updated)

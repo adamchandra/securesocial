@@ -43,11 +43,12 @@ class UsernamePasswordProvider(application: Application) extends IdentityProvide
     form.fold(
       errors => Left(badRequest(errors, request)),
       credentials => {
-        val userId = UserId(credentials._1, id)
+        val userId = UserId.forProvider(UsernamePasswordProvider.UsernamePassword)(credentials._1)
         val result = for (
-          user <- UserService.find(userId) ;
-          pinfo <- user.passwordInfo ;
-          hasher <- Registry.hashers.get(pinfo.hasher) if hasher.matches(pinfo, credentials._2)
+          user <- UserService.find(userId) 
+          if user.passwordInfos.exists({pinfo =>
+              Registry.hashers.get(pinfo.hasher).map(_.matches(pinfo, credentials._2)).getOrElse(false)
+          })
         ) yield (
           Right(SocialUser(user))
         )

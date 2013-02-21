@@ -17,8 +17,10 @@
 package securesocial.core.providers.utils
 
 import securesocial.core.{Registry, Registrable, PasswordInfo}
+import securesocial.core.Tags._
 import play.api.{Logger, Plugin, Application}
 import org.mindrot.jbcrypt._
+
 
 /**
  * A trait that defines the password hasher interface
@@ -77,8 +79,13 @@ class BCryptPasswordHasher(app: Application) extends PasswordHasher {
    */
   def hash(plainPassword: String): PasswordInfo = {
     val logRounds = app.configuration.getInt(RoundsProperty).getOrElse(DefaultRounds)
-    PasswordInfo(id, BCrypt.hashpw(plainPassword, BCrypt.gensalt(logRounds)))
+    PasswordInfo(
+      tagHasher(id),
+      tagPasswordHashed(BCrypt.hashpw(plainPassword, BCrypt.gensalt(logRounds)))
+    )
   }
+
+
 
   /**
    * Checks if a password matches the hashed version

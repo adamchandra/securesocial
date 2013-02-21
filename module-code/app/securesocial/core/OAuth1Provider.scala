@@ -53,6 +53,8 @@ abstract class OAuth1Provider(application: Application) extends IdentityProvider
   }
 
 
+
+
   def doAuth[A]()(implicit request: Request[A]):Either[Result, SocialUser] = {
     if ( request.queryString.get("denied").isDefined ) {
       // the user did not grant access to the account
@@ -74,7 +76,7 @@ abstract class OAuth1Provider(application: Application) extends IdentityProvider
             Cache.set(cacheKey, "", 1)
             Right(
               SocialUser(
-                UserId("", id), "", "", "", None, None, authMethod,
+                UserId.forProvider(id)("unspecified-oauth1-user"), "", "", "", None, None, authMethod,
                 oAuth1Info = Some(OAuth1Info(token.token, token.secret))
               )
             )

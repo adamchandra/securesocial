@@ -15,6 +15,7 @@
  *
  */
 package securesocial.core
+import Tags._
 
 
 /**
@@ -39,7 +40,8 @@ trait Identity {
   def authMethod: AuthenticationMethod
   def oAuth1Info: Option[OAuth1Info]
   def oAuth2Info: Option[OAuth2Info]
-  def passwordInfo: Option[PasswordInfo]
+  // def passwordInfo: Option[PasswordInfo]
+  def passwordInfos: List[PasswordInfo]
 }
 
 /**
@@ -49,14 +51,14 @@ case class SocialUser(id: UserId, firstName: String, lastName: String, fullName:
                       avatarUrl: Option[String], authMethod: AuthenticationMethod,
                       oAuth1Info: Option[OAuth1Info] = None,
                       oAuth2Info: Option[OAuth2Info] = None,
-                      passwordInfo: Option[PasswordInfo] = None) extends Identity
+                      passwordInfos: List[PasswordInfo] = List()) extends Identity
 
 object SocialUser {
   def apply(i: Identity): SocialUser = {
     SocialUser(
       i.id, i.firstName, i.lastName, i.fullName,
       i.email, i.avatarUrl, i.authMethod, i.oAuth1Info,
-      i.oAuth2Info, i.passwordInfo
+      i.oAuth2Info, i.passwordInfos
     )
   }
 }
@@ -67,7 +69,19 @@ object SocialUser {
  * @param id the id on the provider the user came from (eg: twitter, facebook)
  * @param providerId the provider they used to sign in
  */
-case class UserId(id: String, providerId: String)
+class UserId(val userKey: String, val providerKey: String)
+
+object UserId {
+  val knownProviders = "google facebook twitter github userpass".split(" ").toList
+
+  def apply(providerKey: String): (String => UserId) = {
+    if (!knownProviders.contains(providerKey)) 
+      sys.error("unknown provider specified in UserId: "+providerKey)
+    (userKey: String) => new UserId(userKey, providerKey)
+  }
+
+  def forProvider(p: String) = UserId(p)
+}
 
 /**
  * The OAuth 1 details
@@ -88,6 +102,7 @@ case class OAuth1Info(token: String, secret: String)
 case class OAuth2Info(accessToken: String, tokenType: Option[String] = None,
                       expiresIn: Option[Int] = None, refreshToken: Option[String] = None)
 
+
 /**
  * The password details
  *
@@ -95,4 +110,8 @@ case class OAuth2Info(accessToken: String, tokenType: Option[String] = None,
  * @param password the hashed password
  * @param salt the optional salt used when hashing
  */
-case class PasswordInfo(hasher: String, password: String, salt: Option[String] = None)
+case class PasswordInfo(
+  hasher: String @@ Hasher,
+  password: String @@ PasswordHashed, 
+  salt: Option[String] = None
+)

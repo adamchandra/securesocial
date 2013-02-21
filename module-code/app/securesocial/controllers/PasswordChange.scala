@@ -45,7 +45,10 @@ object PasswordChange extends Controller with SecureSocial {
 
 
   def checkCurrentPassword[A](currentPassword: String)(implicit request: SecuredRequest[A]):Boolean = {
-    use[PasswordHasher].matches(request.user.passwordInfo.get, currentPassword)
+    request.user.passwordInfos.exists({
+      use[PasswordHasher].matches(_, currentPassword)
+    })
+    // use[PasswordHasher].matches(request.user.passwordInfo.get, currentPassword)
   }
 
   private def execute[A](f: (SecuredRequest[A], Form[ChangeInfo]) => Result)(implicit request: SecuredRequest[A]): Result = {
@@ -59,8 +62,7 @@ object PasswordChange extends Controller with SecureSocial {
               p => use[PasswordValidator].isValid(p)),
             Password2 -> nonEmptyText
           ).verifying(Messages(Registration.PasswordsDoNotMatch), passwords => passwords._1 == passwords._2)
-          )
-
+        )
       )((currentPassword, newPassword) => ChangeInfo(currentPassword, newPassword._1))
         ((changeInfo: ChangeInfo) => Some("", ("", "")))
     )
@@ -84,8 +86,8 @@ object PasswordChange extends Controller with SecureSocial {
         errors => BadRequest(use[TemplatesPlugin].getPasswordChangePage(request, errors)),
         info =>  {
           val newPasswordInfo = use[PasswordHasher].hash(info.newPassword)
-          val u = SocialUser(request.user).copy( passwordInfo = Some(newPasswordInfo))
-          UserService.save( u )
+          val u = SocialUser(request.user).copy(passwordInfos = List(newPasswordInfo))
+          UserService.save(u)
           Mailer.sendPasswordChangedNotice(u)(request)
           Redirect(RoutesHelper.changePasswordPage()).flashing(Success -> Messages(OkMessage))
         }
