@@ -64,28 +64,34 @@ trait SecureSocial extends Controller {
     Forbidden( Json.toJson(Map("error" -> "Not authorized"))).as(JSON)
   }
 
-  private def touchSession(requestSession: Session, result: PlainResult): Result = {
-    // I can't change the session of a result directly, so I'm getting the cookie
-    // and decoding it from there.
-    // If there is no session in the result, then it's safe to use the
-    // values from the request.
-    val s = result.header.headers.get(SET_COOKIE).map { c =>
-      val cookie = Cookies.decode(c).headOption
-      Session.decodeFromCookie(cookie)
-    } getOrElse {
-      requestSession
-    }
-    result.withSession(s + SecureSocial.lastAccess)
-  }
+  // private def touchSession(requestSession: Session, result: PlainResult): Result = {
+  //   // I can't change the session of a result directly, so I'm getting the cookie
+  //   // and decoding it from there.
+  //   // If there is no session in the result, then it's safe to use the
+  //   // values from the request.
+  //   val s = result.header.headers.get(SET_COOKIE).map { c =>
+  //     println("[securesocial] touchSession()")
+  //     val cookie = Cookies.decode(c).headOption
+  //     val sess = Session.decodeFromCookie(cookie)
+  //     println(sess)
+  //     sess
+  //   } getOrElse {
+  //     requestSession
+  //   }
+  //   result.withSession(s + SecureSocial.lastAccess)
+  // }
 
   def lastAccessFromSession(session: Session): Option[DateTime] = {
-    session.data.get(SecureSocial.LastAccessKey).map {
-      DateTime.parse(_)
-    }
+    Some(DateTime.now)
+    // session.data.get(SecureSocial.LastAccessKey).map {
+    //   DateTime.parse(_)
+    // }
   }
 
+  // ACS: This is disabled, as the touchSession 
   def isSessionExpired(lastAccess: DateTime): Boolean = {
-    DateTime.now().isAfter( lastAccess.plusMinutes(sessionTimeOutMinutes))
+    false
+    // DateTime.now().isAfter( lastAccess.plusMinutes(sessionTimeOutMinutes))
   }
 
   /**
@@ -103,23 +109,24 @@ trait SecureSocial extends Controller {
     ajaxCall: Boolean, 
     authorize: Option[Authorization], 
     p: BodyParser[A], 
-    flashMessage:Option[(String, String)] = Some("error" -> Messages("securesocial.loginRequired")),
     landingUrl: Option[String] = None
   ) (
     f: SecuredRequest[A] => Result
   ) = Action(p) {
     implicit request => {
-
       val result = for (
         lastAccess <- lastAccessFromSession(session) ;
+        _ = Logger.trace("[securesocial]: lastAccessFromSession=" + lastAccess) ;
         userId <- SecureSocial.userFromSession if !isSessionExpired(lastAccess) ;
-        user <- UserService.find(userId)
+        _ = Logger.trace("[securesocial]: userId=" + userId);
+        user <- UserService.find(userId);
+        _ = Logger.trace("[securesocial]: user=" + user)
       ) yield {
         if ( authorize.isEmpty || authorize.get.isAuthorized(user)) {
           f(SecuredRequest(user, request)) match {
-            case plainResult: PlainResult => {
-              touchSession(request.session, plainResult)
-            }
+            // case plainResult: PlainResult => {
+            //   touchSession(request.session, plainResult)
+            // }
             case r => r
           }
 
@@ -141,7 +148,7 @@ trait SecureSocial extends Controller {
         if ( ajaxCall ) {
           ajaxCallNotAuthenticated(request)
         } else {
-          Redirect(RoutesHelper.login()).flashing(flashMessage.getOrElse(""->"")).withSession(
+          Redirect(RoutesHelper.login()).withSession(
             session + (SecureSocial.OriginalUrlKey -> finalUrl)
               - SecureSocial.UserKey
               - SecureSocial.ProviderKey
@@ -216,9 +223,9 @@ trait SecureSocial extends Controller {
     implicit request => {
       val user = SecureSocial.currentUser
       f(RequestWithUser(user, request)) match {
-        case plainResult: PlainResult if user.isDefined => {
-          touchSession(request.session, plainResult)
-        }
+        // case plainResult: PlainResult if user.isDefined => {
+        //   touchSession(request.session, plainResult)
+        // }
         case r => r
       }
     }
