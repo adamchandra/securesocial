@@ -7,7 +7,7 @@ import edu.umass.cs.iesl.sbtbase.IeslProject._
 object ApplicationBuild extends Build {
   implicit val allDeps: Dependencies = new Dependencies()
   import allDeps._
-  override def settings = super.settings ++ org.sbtidea.SbtIdeaPlugin.ideaSettings
+  // override def settings = super.settings ++ org.sbtidea.SbtIdeaPlugin.ideaSettings
 
 
   val appName         = "securesocial"
