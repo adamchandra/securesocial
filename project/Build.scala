@@ -1,8 +1,9 @@
 import sbt._
 import Keys._
-import PlayProject._
 import edu.umass.cs.iesl.sbtbase.Dependencies
 import edu.umass.cs.iesl.sbtbase.IeslProject._
+
+import play.Project._
 
 object ApplicationBuild extends Build {
   implicit val allDeps: Dependencies = new Dependencies()
@@ -21,7 +22,7 @@ object ApplicationBuild extends Build {
 
 
   // val main = PlayProject(appName, appVersion, appDependencies, mainLang = SCALA)
-  val main = (PlayProject(appName, appVersion, appDependencies, path = file("module-code"), mainLang = SCALA)
+  val main = (play.Project(appName, appVersion, appDependencies, path = file("module-code")) //u, mainLang = SCALA)
     .ieslSetup(appVersion, appDependencies, Public, WithSnapshotDependencies, org = organization, conflict = ConflictStrict)
     .settings(resolvers ++= Seq(
       "jBCrypt Repository" at "http://repo1.maven.org/maven2/org/",
