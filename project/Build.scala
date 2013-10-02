@@ -15,8 +15,8 @@ object ApplicationBuild extends Build {
   val organization    = "net.openreview"
 
   val appDependencies = Seq(
-    "org.apache.commons" % "commons-email" % "1.2",
-    "org.mindrot" % "jbcrypt" % "0.3m"
+    "org.apache.commons" % "commons-email" % "latest.release",
+    "org.mindrot" % "jbcrypt" % "latest.release"
   )
 
 
